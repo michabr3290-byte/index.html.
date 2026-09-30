@@ -1,0 +1,1957 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Galaxy Explorer</title>
+  <style>
+    :root {
+      --space-black: #020617;
+      --panel: rgba(8, 18, 42, 0.84);
+      --cyan: #67e8f9;
+      --text: #e0f2fe;
+      --muted: #94a3b8;
+      --light-square: #b9d9df;
+      --dark-square: #315873;
+      --selected-square: #facc15;
+      --possible-square: rgba(103, 232, 249, 0.75);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      min-height: 100vh;
+      overflow-x: hidden;
+      color: var(--text);
+      font-family: Arial, Helvetica, sans-serif;
+      background:
+        radial-gradient(circle at 75% 20%, rgba(91, 33, 182, 0.3), transparent 30%),
+        radial-gradient(circle at 15% 75%, rgba(8, 145, 178, 0.2), transparent 30%),
+        linear-gradient(135deg, #01030b 0%, #071126 48%, #030712 100%);
+    }
+
+    body::before,
+    body::after {
+      content: "";
+      position: fixed;
+      inset: -50%;
+      z-index: -3;
+      pointer-events: none;
+      background-image:
+        radial-gradient(circle, rgba(255, 255, 255, 0.95) 0 1px, transparent 1.5px),
+        radial-gradient(circle, rgba(125, 211, 252, 0.8) 0 1px, transparent 1.5px),
+        radial-gradient(circle, rgba(255, 255, 255, 0.5) 0 0.8px, transparent 1.2px);
+      background-size: 180px 180px, 260px 260px, 340px 340px;
+      background-position: 10px 20px, 80px 120px, 150px 40px;
+      opacity: 0.7;
+      animation: starDrift 75s linear infinite;
+    }
+
+    body::after {
+      z-index: -4;
+      opacity: 0.35;
+      filter: blur(0.5px);
+      animation-duration: 120s;
+      animation-direction: reverse;
+    }
+
+    @keyframes starDrift {
+      from {
+        transform: translate3d(0, 0, 0) rotate(0deg);
+      }
+
+      to {
+        transform: translate3d(100px, 65px, 0) rotate(2deg);
+      }
+    }
+
+    .space-nebula {
+      position: fixed;
+      inset: 0;
+      z-index: -2;
+      pointer-events: none;
+      background:
+        radial-gradient(ellipse at 68% 30%, rgba(124, 58, 237, 0.2), transparent 38%),
+        radial-gradient(ellipse at 28% 70%, rgba(14, 165, 233, 0.15), transparent 42%);
+      filter: blur(25px);
+      animation: nebulaPulse 14s ease-in-out infinite alternate;
+    }
+
+    @keyframes nebulaPulse {
+      from {
+        opacity: 0.65;
+        transform: scale(1);
+      }
+
+      to {
+        opacity: 1;
+        transform: scale(1.08);
+      }
+    }
+
+    .planet {
+      position: fixed;
+      right: 7%;
+      top: 12%;
+      z-index: -1;
+      width: 210px;
+      height: 210px;
+      border-radius: 50%;
+      opacity: 0.82;
+      pointer-events: none;
+      background:
+        radial-gradient(circle at 30% 26%, rgba(255, 255, 255, 0.8), transparent 4%),
+        radial-gradient(circle at 38% 35%, #64748b 0%, #334155 35%, #111827 72%, #020617 100%);
+      box-shadow:
+        -28px -18px 35px rgba(255, 255, 255, 0.12),
+        0 0 65px rgba(96, 165, 250, 0.18);
+      animation: planetFloat 10s ease-in-out infinite alternate;
+    }
+
+    .planet::after {
+      content: "";
+      position: absolute;
+      width: 310px;
+      height: 72px;
+      top: 72px;
+      left: -50px;
+      border: 2px solid rgba(186, 230, 253, 0.25);
+      border-radius: 50%;
+      transform: rotate(-18deg);
+      box-shadow: 0 0 20px rgba(125, 211, 252, 0.15);
+    }
+
+    @keyframes planetFloat {
+      from {
+        transform: translateY(0);
+      }
+
+      to {
+        transform: translateY(18px);
+      }
+    }
+
+    /* Toolbar */
+    .toolbar {
+      position: fixed;
+      left: 18px;
+      top: 50%;
+      z-index: 20;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      width: 68px;
+      padding: 14px 10px;
+      transform: translateY(-50%);
+      border: 1px solid rgba(125, 211, 252, 0.28);
+      border-radius: 24px;
+      background: linear-gradient(180deg, rgba(18, 27, 58, 0.96), rgba(7, 12, 30, 0.92));
+      box-shadow:
+        0 0 28px rgba(56, 189, 248, 0.2),
+        inset 0 0 18px rgba(129, 140, 248, 0.12);
+      backdrop-filter: blur(16px);
+    }
+
+    .toolbar-logo {
+      display: grid;
+      place-items: center;
+      width: 46px;
+      height: 46px;
+      margin-bottom: 5px;
+      color: white;
+      font-size: 22px;
+      border: 1px solid rgba(103, 232, 249, 0.5);
+      border-radius: 15px;
+      background: linear-gradient(135deg, #164e63, #312e81);
+      box-shadow: 0 0 18px rgba(34, 211, 238, 0.4);
+    }
+
+    .toolbar button {
+      position: relative;
+      display: grid;
+      place-items: center;
+      width: 46px;
+      height: 46px;
+      color: #dbeafe;
+      font-size: 20px;
+      border: 1px solid rgba(147, 197, 253, 0.25);
+      border-radius: 14px;
+      background: rgba(30, 41, 75, 0.7);
+      cursor: pointer;
+      transition: 0.25s ease;
+    }
+
+    .toolbar button:hover,
+    .toolbar button.active {
+      color: white;
+      border-color: var(--cyan);
+      background: linear-gradient(135deg, #164e63, #312e81);
+      box-shadow:
+        0 0 15px rgba(34, 211, 238, 0.65),
+        inset 0 0 10px rgba(129, 140, 248, 0.3);
+      transform: translateX(4px) scale(1.05);
+    }
+
+    .toolbar button span {
+      position: absolute;
+      left: 60px;
+      padding: 7px 10px;
+      color: white;
+      font-size: 12px;
+      white-space: nowrap;
+      border: 1px solid rgba(125, 211, 252, 0.25);
+      border-radius: 8px;
+      background: rgba(2, 6, 23, 0.95);
+      opacity: 0;
+      pointer-events: none;
+      transform: translateX(-6px);
+      transition: 0.2s ease;
+    }
+
+    .toolbar button:hover span {
+      opacity: 1;
+      transform: translateX(0);
+    }
+
+    /* Main layout */
+    .page {
+      width: min(1180px, calc(100% - 140px));
+      margin: 0 auto;
+      padding: 45px 0 80px 45px;
+    }
+
+    .hero {
+      position: relative;
+      overflow: hidden;
+      padding: 48px 42px;
+      border: 1px solid rgba(125, 211, 252, 0.25);
+      border-radius: 30px;
+      background: linear-gradient(135deg, rgba(15, 23, 42, 0.78), rgba(30, 41, 75, 0.48));
+      box-shadow:
+        0 25px 80px rgba(0, 0, 0, 0.35),
+        inset 0 0 30px rgba(125, 211, 252, 0.05);
+      backdrop-filter: blur(12px);
+    }
+
+    .eyebrow {
+      margin-bottom: 14px;
+      color: var(--cyan);
+      font-size: 13px;
+      font-weight: bold;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      max-width: 750px;
+      margin-bottom: 18px;
+      color: white;
+      font-size: clamp(38px, 7vw, 76px);
+      line-height: 0.98;
+      text-shadow:
+        0 0 22px rgba(103, 232, 249, 0.25),
+        0 0 50px rgba(167, 139, 250, 0.18);
+    }
+
+    .hero p {
+      max-width: 700px;
+      color: #cbd5e1;
+      font-size: 18px;
+      line-height: 1.7;
+    }
+
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+      margin-top: 28px;
+    }
+
+    .primary-button,
+    .secondary-button {
+      padding: 13px 19px;
+      color: white;
+      font-weight: bold;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: 0.25s ease;
+    }
+
+    .primary-button {
+      border: 1px solid var(--cyan);
+      background: linear-gradient(135deg, #0891b2, #4f46e5);
+      box-shadow: 0 0 18px rgba(34, 211, 238, 0.3);
+    }
+
+    .secondary-button {
+      border: 1px solid rgba(148, 163, 184, 0.4);
+      background: rgba(15, 23, 42, 0.65);
+    }
+
+    .primary-button:hover,
+    .secondary-button:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 10px 25px rgba(56, 189, 248, 0.2);
+    }
+
+    /* General content panels */
+    .section-title {
+      margin: 45px 0 18px;
+      color: white;
+      font-size: 26px;
+    }
+
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 18px;
+    }
+
+    .card {
+      padding: 24px;
+      border: 1px solid rgba(148, 163, 184, 0.22);
+      border-radius: 20px;
+      background: var(--panel);
+      box-shadow: inset 0 0 20px rgba(96, 165, 250, 0.04);
+      backdrop-filter: blur(12px);
+      transition: 0.25s ease;
+    }
+
+    .card:hover {
+      border-color: rgba(103, 232, 249, 0.65);
+      box-shadow:
+        0 0 22px rgba(34, 211, 238, 0.16),
+        inset 0 0 20px rgba(96, 165, 250, 0.08);
+      transform: translateY(-5px);
+    }
+
+    .card-icon {
+      display: grid;
+      place-items: center;
+      width: 45px;
+      height: 45px;
+      margin-bottom: 18px;
+      font-size: 21px;
+      border-radius: 14px;
+      background: linear-gradient(135deg, #164e63, #312e81);
+      box-shadow: 0 0 16px rgba(56, 189, 248, 0.22);
+    }
+
+    .card h3 {
+      margin-bottom: 9px;
+      color: white;
+    }
+
+    .card p {
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    .info-panel {
+      display: none;
+      margin-top: 22px;
+      padding: 22px;
+      border: 1px solid rgba(103, 232, 249, 0.35);
+      border-radius: 18px;
+      background: rgba(8, 18, 42, 0.8);
+    }
+
+    .info-panel.visible {
+      display: block;
+      animation: panelIn 0.3s ease;
+    }
+
+    @keyframes panelIn {
+      from {
+        opacity: 0;
+        transform: translateY(8px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .info-panel h2 {
+      margin-bottom: 8px;
+      color: var(--cyan);
+    }
+
+    .info-panel p {
+      color: #cbd5e1;
+      line-height: 1.6;
+    }
+
+    .chat-box {
+      display: flex;
+      gap: 10px;
+      margin-top: 20px;
+    }
+
+    .chat-box input {
+      flex: 1;
+      min-width: 0;
+      padding: 13px 15px;
+      color: white;
+      border: 1px solid rgba(148, 163, 184, 0.35);
+      border-radius: 12px;
+      outline: none;
+      background: rgba(2, 6, 23, 0.65);
+    }
+
+    .chat-box input:focus {
+      border-color: var(--cyan);
+      box-shadow: 0 0 12px rgba(34, 211, 238, 0.2);
+    }
+
+    .chat-box button {
+      padding: 0 18px;
+      color: white;
+      border: 1px solid var(--cyan);
+      border-radius: 12px;
+      background: linear-gradient(135deg, #0891b2, #4f46e5);
+      cursor: pointer;
+    }
+
+    /* Chess game */
+    .games-section {
+      display: none;
+      margin-top: 30px;
+    }
+
+    .games-section.visible {
+      display: block;
+      animation: panelIn 0.35s ease;
+    }
+
+    .game-layout {
+      display: grid;
+      grid-template-columns: minmax(280px, 680px) minmax(230px, 1fr);
+      gap: 24px;
+      align-items: start;
+    }
+
+    .chess-panel,
+    .side-panel {
+      padding: 22px;
+      border: 1px solid rgba(125, 211, 252, 0.24);
+      border-radius: 24px;
+      background: var(--panel);
+      box-shadow:
+        0 18px 60px rgba(0, 0, 0, 0.28),
+        inset 0 0 25px rgba(96, 165, 250, 0.05);
+      backdrop-filter: blur(14px);
+    }
+
+    .chess-heading {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 15px;
+      margin-bottom: 18px;
+    }
+
+    .chess-heading h2,
+    .side-panel h2 {
+      color: white;
+      font-size: 24px;
+    }
+
+    .turn-indicator {
+      padding: 8px 11px;
+      color: #cffafe;
+      font-size: 12px;
+      border: 1px solid rgba(103, 232, 249, 0.35);
+      border-radius: 999px;
+      background: rgba(8, 47, 73, 0.7);
+    }
+
+    .board {
+      display: grid;
+      width: 100%;
+      max-width: 640px;
+      aspect-ratio: 1;
+      margin: 0 auto;
+      overflow: hidden;
+      border: 5px solid rgba(15, 23, 42, 0.9);
+      border-radius: 12px;
+      box-shadow:
+        0 0 0 2px rgba(103, 232, 249, 0.24),
+        0 0 30px rgba(34, 211, 238, 0.18);
+    }
+
+    .square {
+      position: relative;
+      display: grid;
+      place-items: center;
+      aspect-ratio: 1;
+      border: 0;
+      font-family: "Segoe UI Symbol", "Noto Sans Symbols 2", serif;
+      font-size: clamp(27px, 6vw, 58px);
+      line-height: 1;
+      cursor: pointer;
+      transition: filter 0.15s ease;
+    }
+
+    .square.light {
+      color: #111827;
+      background: var(--light-square);
+    }
+
+    .square.dark {
+      color: #f8fafc;
+      background: var(--dark-square);
+    }
+
+    .square:hover {
+      filter: brightness(1.14);
+    }
+
+    .square.selected {
+      outline: 4px solid var(--selected-square);
+      outline-offset: -4px;
+      z-index: 2;
+    }
+
+    .square.last-move {
+      box-shadow: inset 0 0 0 999px rgba(250, 204, 21, 0.22);
+    }
+
+    .square.possible::after {
+      content: "";
+      position: absolute;
+      width: 24%;
+      height: 24%;
+      border-radius: 50%;
+      background: var(--possible-square);
+      box-shadow: 0 0 12px rgba(103, 232, 249, 0.9);
+    }
+
+    .square.possible.capture::after {
+      width: 78%;
+      height: 78%;
+      background: transparent;
+      border: 5px solid rgba(248, 113, 113, 0.9);
+      box-shadow: 0 0 12px rgba(248, 113, 113, 0.7);
+    }
+
+    .square.in-check {
+      background: rgba(239, 68, 68, 0.8) !important;
+      animation: checkPulse 0.8s infinite alternate;
+    }
+
+    @keyframes checkPulse {
+      from {
+        filter: brightness(0.9);
+      }
+
+      to {
+        filter: brightness(1.25);
+      }
+    }
+
+    .board-label {
+      position: absolute;
+      right: 5px;
+      bottom: 3px;
+      color: rgba(15, 23, 42, 0.6);
+      font-family: Arial, sans-serif;
+      font-size: 10px;
+      font-weight: bold;
+      pointer-events: none;
+    }
+
+    .dark .board-label {
+      color: rgba(255, 255, 255, 0.6);
+    }
+
+    .game-controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 18px;
+    }
+
+    .game-controls button {
+      flex: 1;
+      min-width: 110px;
+      padding: 11px 13px;
+      color: white;
+      border: 1px solid rgba(125, 211, 252, 0.3);
+      border-radius: 10px;
+      background: rgba(30, 41, 75, 0.75);
+      cursor: pointer;
+      transition: 0.2s ease;
+    }
+
+    .game-controls button:hover {
+      border-color: var(--cyan);
+      background: linear-gradient(135deg, #164e63, #312e81);
+      transform: translateY(-2px);
+    }
+
+    .game-status {
+      min-height: 44px;
+      margin-top: 16px;
+      padding: 12px;
+      color: #bae6fd;
+      border-left: 3px solid var(--cyan);
+      border-radius: 8px;
+      background: rgba(8, 47, 73, 0.45);
+      line-height: 1.5;
+    }
+
+    .side-panel h2 {
+      margin-bottom: 15px;
+    }
+
+    .side-panel p {
+      margin-bottom: 17px;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    .move-list {
+      max-height: 370px;
+      overflow-y: auto;
+      padding: 10px;
+      border: 1px solid rgba(148, 163, 184, 0.18);
+      border-radius: 12px;
+      background: rgba(2, 6, 23, 0.5);
+    }
+
+    .move-row {
+      display: grid;
+      grid-template-columns: 34px 1fr 1fr;
+      gap: 8px;
+      padding: 8px 5px;
+      color: #cbd5e1;
+      border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+    }
+
+    .move-row:last-child {
+      border-bottom: 0;
+    }
+
+    .move-number {
+      color: var(--cyan);
+      font-weight: bold;
+    }
+
+    .empty-moves {
+      padding: 15px 5px;
+      color: #64748b;
+      text-align: center;
+    }
+
+    .rules {
+      margin-top: 18px;
+      padding: 15px;
+      color: #cbd5e1;
+      border: 1px solid rgba(167, 139, 250, 0.25);
+      border-radius: 13px;
+      background: rgba(49, 46, 129, 0.18);
+      line-height: 1.5;
+    }
+
+    .rules strong {
+      color: #ddd6fe;
+    }
+
+    footer {
+      margin-top: 45px;
+      color: #64748b;
+      text-align: center;
+      font-size: 13px;
+    }
+
+    @media (max-width: 900px) {
+      .game-layout {
+        grid-template-columns: 1fr;
+      }
+
+      .side-panel {
+        max-width: 640px;
+        width: 100%;
+        margin: 0 auto;
+      }
+    }
+
+   @media (max-width: 800px) {
+  .toolbar {
+    top: auto;
+    right: 50%;
+    bottom: 15px;
+   left:auto;
+    flex-direction: row;
+    width: max-content;
+    transform: translateX(50%);
+  }
+
+  .toolbar-logo {
+    display: none;
+  }
+
+  .toolbar button span {
+    top: -38px;
+    right: 50%;
+    left:auto;
+    transform: translateX(50%);
+  }
+
+  .toolbar button:hover span {
+    transform: translateX(50%);
+  }
+
+  .page {
+    width: calc(100% - 30px);
+    padding: 25px 0 110px;
+  }
+
+  .hero {
+    padding: 34px 24px;
+  }
+
+  .cards {
+    grid-template-columns: 1fr;
+  }
+
+  .planet {
+    right: -80px;
+    top: 8%;
+    transform: scale(0.7);
+  }
+}
+
+
+    @media (prefers-reduced-motion: reduce) {
+      *,
+      *::before,
+      *::after {
+        animation: none !important;
+        transition: none !important;
+        scroll-behavior: auto !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="space-nebula"></div>
+  <div class="planet"></div>
+  <nav class="toolbar" aria-label="Main navigation">
+    <div class="toolbar-logo">✦</div>
+<button class="active" data-section="home" aria-label="Home">
+  ⌂
+  <span>Home</span>
+</button>
+
+<button data-section="explore" aria-label="Explore">
+  ◈
+  <span>Explore</span>
+</button>
+
+<button data-section="games" aria-label="Games">
+  ♞
+  <span>Games</span>
+</button>
+
+<button data-section="missions" aria-label="Missions">
+  ◒
+  <span>Missions</span>
+</button>
+
+<button data-section="messages" aria-label="Messages">
+  ✉
+  <span>Messages</span>
+</button>
+
+<button data-section="settings" aria-label="Settings">
+  ⚙
+  <span>Settings</span>
+</button>
+
+  </nav>
+  <main class="page">
+    <section class="hero" id="home">
+      <div class="eyebrow">Deep Space Interface</div>
+  <h1>Explore beyond the ordinary.</h1>
+
+  <p>
+    Welcome to your galaxy-themed command center. Discover new worlds,
+    organize your missions, play chess, and navigate the stars through a
+    cleaner, brighter, and more immersive interface.
+  </p>
+
+  <div class="hero-actions">
+    <button class="primary-button" id="exploreButton">
+      Begin Exploration
+    </button>
+
+    <button class="secondary-button" id="openChessButton">
+      Open Chess
+    </button>
+
+    <button class="secondary-button" id="randomButton">
+      Find a Random Star
+    </button>
+  </div>
+
+  <div class="info-panel" id="infoPanel">
+    <h2 id="infoTitle">Welcome, explorer!</h2>
+
+    <p id="infoText">
+      Choose an option from the toolbar or start exploring the galaxy.
+    </p>
+
+    <div class="chat-box">
+      <input
+        id="messageInput"
+        type="text"
+        placeholder="Ask about HTML, CSS, or JavaScript..."
+      />
+
+      <button id="sendButton">Send</button>
+    </div>
+  </div>
+</section>
+
+<h2 class="section-title" id="explore">Galaxy Highlights</h2>
+
+<section class="cards">
+  <article class="card">
+    <div class="card-icon">✧</div>
+    <h3>Stellar Design</h3>
+    <p>
+      Glowing colors, glass panels, smooth motion, and deep-space gradients
+      create a modern cosmic atmosphere.
+    </p>
+  </article>
+
+  <article class="card">
+    <div class="card-icon">◉</div>
+    <h3>Living Background</h3>
+    <p>
+      Multiple star layers drift slowly in different directions for a
+      subtle and realistic sense of motion.
+    </p>
+  </article>
+
+  <article class="card">
+    <div class="card-icon">⌁</div>
+    <h3>Easy Navigation</h3>
+    <p>
+      The improved left toolbar keeps important controls visible without
+      taking over the rest of the page.
+    </p>
+  </article>
+</section>
+
+<section class="info-panel" id="missions">
+  <h2>Mission Control</h2>
+
+  <p>
+    Your current mission is to build a beautiful, responsive website that
+    feels like a real command deck traveling through space.
+  </p>
+</section>
+
+<section class="games-section" id="games">
+  <div class="game-layout">
+    <div class="chess-panel">
+      <div class="chess-heading">
+        <h2>♞ Galaxy Chess</h2>
+
+        <div class="turn-indicator" id="turnIndicator">
+          White to move
+        </div>
+      </div>
+
+      <div
+        class="board"
+        id="chessBoard"
+        role="grid"
+        aria-label="Chess board">
+      </div>
+
+      <div class="game-controls">
+        <button id="newGameButton">New Game</button>
+        <button id="undoButton">Undo Move</button>
+        <button id="flipButton">Flip Board</button>
+      </div>
+
+      <div class="game-status" id="gameStatus">
+        Select a piece to begin. White moves first.
+      </div>
+    </div>
+
+    <aside class="side-panel">
+      <h2>Move History</h2>
+
+      <p>
+        Click one of your pieces, then click a highlighted square to move
+        it. The game supports legal movement, captures, check, checkmate,
+        castling, promotion, and en passant.
+      </p>
+
+      <div class="move-list" id="moveList">
+        <div class="empty-moves">No moves yet.</div>
+      </div>
+
+      <div class="rules">
+        <strong>Tip:</strong>
+        Protect your king. If your king is in check, you must remove the
+        threat before making another move.
+      </div>
+    </aside>
+  </div>
+</section>
+
+<footer>
+  Galaxy Explorer · Built for curious minds
+</footer>
+
+  </main>
+  <script>
+    const toolbarButtons = document.querySelectorAll(".toolbar button");
+    const infoPanel = document.getElementById("infoPanel");
+    const infoTitle = document.getElementById("infoTitle");
+    const infoText = document.getElementById("infoText");
+    const exploreButton = document.getElementById("exploreButton");
+    const openChessButton = document.getElementById("openChessButton");
+    const randomButton = document.getElementById("randomButton");
+    const sendButton = document.getElementById("sendButton");
+    const messageInput = document.getElementById("messageInput");
+    const gamesSection = document.getElementById("games");
+    const boardElement = document.getElementById("chessBoard");
+    const moveListElement = document.getElementById("moveList");
+    const gameStatusElement = document.getElementById("gameStatus");
+    const turnIndicatorElement = document.getElementById("turnIndicator");
+
+    const files = ["a", "b", "c", "d", "e", "f", "g", "h"];
+
+    const stars = [
+      "Sirius",
+      "Vega",
+      "Polaris",
+      "Betelgeuse",
+      "Rigel",
+      "Altair",
+      "Antares",
+      "Deneb"
+    ];
+
+    const pieceSymbols = {
+      wK: "♔",
+      wQ: "♕",
+      wR: "♖",
+      wB: "♗",
+      wN: "♘",
+      wP: "♙",
+      bK: "♚",
+      bQ: "♛",
+      bR: "♜",
+      bB: "♝",
+      bN: "♞",
+      bP: "♟"
+    };
+
+    let board = [];
+    let currentTurn = "w";
+    let selectedSquare = null;
+    let legalMovesForSelected = [];
+    let moveHistory = [];
+    let flipped = false;
+    let enPassantTarget = null;
+    let gameOver = false;
+    let positionHistory = [];
+    let statusMessage = "Select a piece to begin. White moves first.";
+
+    function createInitialBoard() {
+      const newBoard = Array.from(
+        { length: 8 },
+        () => Array(8).fill(null)
+      );
+
+      const backRank = ["R", "N", "B", "Q", "K", "B", "N", "R"];
+
+      for (let column = 0; column < 8; column++) {
+        newBoard[0][column] = "b" + backRank[column];
+        newBoard[1][column] = "bP";
+        newBoard[6][column] = "wP";
+        newBoard[7][column] = "w" + backRank[column];
+      }
+
+      return newBoard;
+    }
+
+    function cloneBoard(sourceBoard) {
+      return sourceBoard.map((row) => [...row]);
+    }
+
+    function isInside(row, column) {
+      return row >= 0 && row < 8 && column >= 0 && column < 8;
+    }
+
+    function oppositeColor(color) {
+      return color === "w" ? "b" : "w";
+    }
+
+    function pieceColor(piece) {
+      return piece ? piece[0] : null;
+    }
+
+    function pieceType(piece) {
+      return piece ? piece[1] : null;
+    }
+
+    function squareName(row, column) {
+      return files[column] + (8 - row);
+    }
+
+    function findKing(position, color) {
+      for (let row = 0; row < 8; row++) {
+        for (let column = 0; column < 8; column++) {
+          if (position[row][column] === color + "K") {
+            return { row, column };
+          }
+        }
+      }
+
+      return null;
+    }
+
+    function isSquareAttacked(position, row, column, byColor) {
+      const pawnDirection = byColor === "w" ? 1 : -1;
+      const pawnRow = row + pawnDirection;
+
+      for (const pawnColumn of [column - 1, column + 1]) {
+        if (
+          isInside(pawnRow, pawnColumn) &&
+          position[pawnRow][pawnColumn] === byColor + "P"
+        ) {
+          return true;
+        }
+      }
+
+      const knightOffsets = [
+        [-2, -1],
+        [-2, 1],
+        [-1, -2],
+        [-1, 2],
+        [1, -2],
+        [1, 2],
+        [2, -1],
+        [2, 1]
+      ];
+
+      for (const [rowOffset, columnOffset] of knightOffsets) {
+        const testRow = row + rowOffset;
+        const testColumn = column + columnOffset;
+
+        if (
+          isInside(testRow, testColumn) &&
+          position[testRow][testColumn] === byColor + "N"
+        ) {
+          return true;
+        }
+      }
+
+      const diagonalDirections = [
+        [-1, -1],
+        [-1, 1],
+        [1, -1],
+        [1, 1]
+      ];
+
+      for (const [rowDirection, columnDirection] of diagonalDirections) {
+        let testRow = row + rowDirection;
+        let testColumn = column + columnDirection;
+
+        while (isInside(testRow, testColumn)) {
+          const piece = position[testRow][testColumn];
+
+          if (piece) {
+            if (
+              pieceColor(piece) === byColor &&
+              (pieceType(piece) === "B" || pieceType(piece) === "Q")
+            ) {
+              return true;
+            }
+
+            break;
+          }
+
+          testRow += rowDirection;
+          testColumn += columnDirection;
+        }
+      }
+
+      const straightDirections = [
+        [-1, 0],
+        [1, 0],
+        [0, -1],
+        [0, 1]
+      ];
+
+      for (const [rowDirection, columnDirection] of straightDirections) {
+        let testRow = row + rowDirection;
+        let testColumn = column + columnDirection;
+
+        while (isInside(testRow, testColumn)) {
+          const piece = position[testRow][testColumn];
+
+          if (piece) {
+            if (
+              pieceColor(piece) === byColor &&
+              (pieceType(piece) === "R" || pieceType(piece) === "Q")
+            ) {
+              return true;
+            }
+
+            break;
+          }
+
+          testRow += rowDirection;
+          testColumn += columnDirection;
+        }
+      }
+
+      for (let rowOffset = -1; rowOffset <= 1; rowOffset++) {
+        for (let columnOffset = -1; columnOffset <= 1; columnOffset++) {
+          if (rowOffset === 0 && columnOffset === 0) {
+            continue;
+          }
+
+          const testRow = row + rowOffset;
+          const testColumn = column + columnOffset;
+
+          if (
+            isInside(testRow, testColumn) &&
+            position[testRow][testColumn] === byColor + "K"
+          ) {
+            return true;
+          }
+        }
+      }
+
+      return false;
+    }
+
+    function isInCheck(position, color) {
+      const king = findKing(position, color);
+
+      if (!king) {
+        return true;
+      }
+
+      return isSquareAttacked(
+        position,
+        king.row,
+        king.column,
+        oppositeColor(color)
+      );
+    }
+
+    function addMove(moves, fromRow, fromColumn, toRow, toColumn, extra = {}) {
+      if (isInside(toRow, toColumn)) {
+        moves.push({
+          fromRow,
+          fromColumn,
+          toRow,
+          toColumn,
+          ...extra
+        });
+      }
+    }
+
+    function getPseudoLegalMoves(position, row, column, options = {}) {
+      const piece = position[row][column];
+
+      if (!piece) {
+        return [];
+      }
+
+      const color = pieceColor(piece);
+      const type = pieceType(piece);
+      const moves = [];
+
+      if (type === "P") {
+        const direction = color === "w" ? -1 : 1;
+        const startingRow = color === "w" ? 6 : 1;
+        const oneRow = row + direction;
+
+        if (isInside(oneRow, column) && !position[oneRow][column]) {
+          addMove(moves, row, column, oneRow, column, {
+            promotion: oneRow === 0 || oneRow === 7
+          });
+
+          const twoRow = row + direction * 2;
+
+          if (
+            row === startingRow &&
+            isInside(twoRow, column) &&
+            !position[twoRow][column]
+          ) {
+            addMove(moves, row, column, twoRow, column, {
+              pawnDouble: true
+            });
+          }
+        }
+
+        for (const captureColumn of [column - 1, column + 1]) {
+          const captureRow = row + direction;
+
+          if (!isInside(captureRow, captureColumn)) {
+            continue;
+          }
+
+          const targetPiece = position[captureRow][captureColumn];
+
+          if (
+            targetPiece &&
+            pieceColor(targetPiece) === oppositeColor(color) &&
+            pieceType(targetPiece) !== "K"
+          ) {
+            addMove(moves, row, column, captureRow, captureColumn, {
+              promotion: captureRow === 0 || captureRow === 7
+            });
+          }
+
+          if (
+            options.enPassantTarget &&
+            options.enPassantTarget.row === captureRow &&
+            options.enPassantTarget.column === captureColumn
+          ) {
+            addMove(moves, row, column, captureRow, captureColumn, {
+              enPassant: true
+            });
+          }
+        }
+      }
+
+      if (type === "N") {
+        const knightOffsets = [
+          [-2, -1],
+          [-2, 1],
+          [-1, -2],
+          [-1, 2],
+          [1, -2],
+          [1, 2],
+          [2, -1],
+          [2, 1]
+        ];
+
+        for (const [rowOffset, columnOffset] of knightOffsets) {
+          const toRow = row + rowOffset;
+          const toColumn = column + columnOffset;
+
+          if (!isInside(toRow, toColumn)) {
+            continue;
+          }
+
+          const targetPiece = position[toRow][toColumn];
+
+          if (
+            !targetPiece ||
+            (pieceColor(targetPiece) === oppositeColor(color) &&
+              pieceType(targetPiece) !== "K")
+          ) {
+            addMove(moves, row, column, toRow, toColumn);
+          }
+        }
+      }
+
+      if (["B", "R", "Q"].includes(type)) {
+        const directions = [];
+
+        if (type === "B" || type === "Q") {
+          directions.push(
+            [-1, -1],
+            [-1, 1],
+            [1, -1],
+            [1, 1]
+          );
+        }
+
+        if (type === "R" || type === "Q") {
+          directions.push(
+            [-1, 0],
+            [1, 0],
+            [0, -1],
+            [0, 1]
+          );
+        }
+
+        for (const [rowDirection, columnDirection] of directions) {
+          let toRow = row + rowDirection;
+          let toColumn = column + columnDirection;
+
+          while (isInside(toRow, toColumn)) {
+            const targetPiece = position[toRow][toColumn];
+
+            if (!targetPiece) {
+              addMove(moves, row, column, toRow, toColumn);
+            } else {
+              if (
+                pieceColor(targetPiece) === oppositeColor(color) &&
+                pieceType(targetPiece) !== "K"
+              ) {
+                addMove(moves, row, column, toRow, toColumn);
+              }
+
+              break;
+            }
+
+            toRow += rowDirection;
+            toColumn += columnDirection;
+          }
+        }
+      }
+
+      if (type === "K") {
+        for (let rowOffset = -1; rowOffset <= 1; rowOffset++) {
+          for (let columnOffset = -1; columnOffset <= 1; columnOffset++) {
+            if (rowOffset === 0 && columnOffset === 0) {
+              continue;
+            }
+
+            const toRow = row + rowOffset;
+            const toColumn = column + columnOffset;
+
+            if (!isInside(toRow, toColumn)) {
+              continue;
+            }
+
+            const targetPiece = position[toRow][toColumn];
+
+            if (
+              !targetPiece ||
+              (pieceColor(targetPiece) === oppositeColor(color) &&
+                pieceType(targetPiece) !== "K")
+            ) {
+              addMove(moves, row, column, toRow, toColumn);
+            }
+          }
+        }
+
+        const homeRow = color === "w" ? 7 : 0;
+
+        if (
+          row === homeRow &&
+          column === 4 &&
+          position[homeRow][4] === color + "K" &&
+          !isInCheck(position, color)
+        ) {
+          if (
+            position[homeRow][7] === color + "R" &&
+            !position[homeRow][5] &&
+            !position[homeRow][6] &&
+            !isSquareAttacked(position, homeRow, 5, oppositeColor(color)) &&
+            !isSquareAttacked(position, homeRow, 6, oppositeColor(color))
+          ) {
+            addMove(moves, row, column, homeRow, 6, {
+              castle: "king"
+            });
+          }
+
+          if (
+            position[homeRow][0] === color + "R" &&
+            !position[homeRow][1] &&
+            !position[homeRow][2] &&
+            !position[homeRow][3] &&
+            !isSquareAttacked(position, homeRow, 3, oppositeColor(color)) &&
+            !isSquareAttacked(position, homeRow, 2, oppositeColor(color))
+          ) {
+            addMove(moves, row, column, homeRow, 2, {
+              castle: "queen"
+            });
+          }
+        }
+      }
+
+      return moves;
+    }
+
+    function applyMove(position, move, promotionPiece = "Q") {
+      const nextPosition = cloneBoard(position);
+      const movingPiece = nextPosition[move.fromRow][move.fromColumn];
+      const color = pieceColor(movingPiece);
+
+      nextPosition[move.fromRow][move.fromColumn] = null;
+
+      if (move.enPassant) {
+        const capturedPawnRow = move.toRow + (color === "w" ? 1 : -1);
+        nextPosition[capturedPawnRow][move.toColumn] = null;
+      }
+
+      let placedPiece = movingPiece;
+
+      if (move.promotion) {
+        placedPiece = color + promotionPiece;
+      }
+
+      nextPosition[move.toRow][move.toColumn] = placedPiece;
+
+      if (move.castle === "king") {
+        nextPosition[move.toRow][5] = color + "R";
+        nextPosition[move.toRow][7] = null;
+      }
+
+      if (move.castle === "queen") {
+        nextPosition[move.toRow][3] = color + "R";
+        nextPosition[move.toRow][0] = null;
+      }
+
+      return nextPosition;
+    }
+
+    function getLegalMovesForSquare(position, row, column, color = currentTurn) {
+      const piece = position[row][column];
+
+      if (!piece || pieceColor(piece) !== color) {
+        return [];
+      }
+
+      const pseudoMoves = getPseudoLegalMoves(position, row, column, {
+        enPassantTarget
+      });
+
+      return pseudoMoves.filter((move) => {
+        const nextPosition = applyMove(position, move, "Q");
+        return !isInCheck(nextPosition, color);
+      });
+    }
+
+    function getAllLegalMoves(position, color) {
+      const allMoves = [];
+
+      for (let row = 0; row < 8; row++) {
+        for (let column = 0; column < 8; column++) {
+          const piece = position[row][column];
+
+          if (piece && pieceColor(piece) === color) {
+            allMoves.push(
+              ...getLegalMovesForSquare(position, row, column, color)
+            );
+          }
+        }
+      }
+
+      return allMoves;
+    }
+
+    function buildPositionKey(position, turn) {
+      return (
+        position.map((row) => row.map((piece) => piece || "--").join("")).join("/") +
+        ` ${turn}`
+      );
+    }
+
+    function isThreefoldRepetition() {
+      const currentKey = buildPositionKey(board, currentTurn);
+
+      return (
+        positionHistory.filter((key) => key === currentKey).length >= 3
+      );
+    }
+
+    function pieceName(piece) {
+      const names = {
+        K: "king",
+        Q: "queen",
+        R: "rook",
+        B: "bishop",
+        N: "knight",
+        P: "pawn"
+      };
+
+      return `${pieceColor(piece) === "w" ? "white" : "black"} ${names[pieceType(piece)]}`;
+    }
+
+    function moveNotation(move, movingPiece, capturedPiece, promotionPiece) {
+      const type = pieceType(movingPiece);
+      const from = squareName(move.fromRow, move.fromColumn);
+      const to = squareName(move.toRow, move.toColumn);
+      const isCapture = Boolean(capturedPiece) || move.enPassant;
+      const promotion = move.promotion ? `=${promotionPiece}` : "";
+
+      if (move.castle === "king") {
+        return "O-O";
+      }
+
+      if (move.castle === "queen") {
+        return "O-O-O";
+      }
+
+      const pieceLetter = type === "P" ? "" : type;
+      const pawnFile = type === "P" && isCapture ? from[0] : "";
+
+      return `${pieceLetter}${pawnFile}${isCapture ? "x" : "-"}${to}${promotion}`;
+    }
+
+    function makeMove(move) {
+      if (gameOver) {
+        return;
+      }
+
+      const movingPiece = board[move.fromRow][move.fromColumn];
+
+      const capturedPiece = move.enPassant
+        ? board[move.fromRow][move.toColumn]
+        : board[move.toRow][move.toColumn];
+
+      let promotionPiece = "Q";
+
+      if (move.promotion) {
+        const answer = prompt(
+          "Promote your pawn to Q, R, B, or N:",
+          "Q"
+        );
+
+        const choice = String(answer || "Q").toUpperCase();
+
+        if (["Q", "R", "B", "N"].includes(choice)) {
+          promotionPiece = choice;
+        }
+      }
+
+      const notation = moveNotation(
+        move,
+        movingPiece,
+        capturedPiece,
+        promotionPiece
+      );
+
+      board = applyMove(board, move, promotionPiece);
+
+      if (move.pawnDouble) {
+        enPassantTarget = {
+          row: (move.fromRow + move.toRow) / 2,
+          column: move.fromColumn
+        };
+      } else {
+        enPassantTarget = null;
+      }
+
+      moveHistory.push({
+        board: cloneBoard(board),
+        currentTurn,
+        notation
+      });
+
+      currentTurn = oppositeColor(currentTurn);
+      selectedSquare = null;
+      legalMovesForSelected = [];
+
+      positionHistory.push(buildPositionKey(board, currentTurn));
+
+      const check = isInCheck(board, currentTurn);
+      const hasMoves = getAllLegalMoves(board, currentTurn).length > 0;
+
+      if (!hasMoves && check) {
+        gameOver = true;
+        statusMessage = `Checkmate! ${currentTurn === "w" ? "Black" : "White"} wins.`;
+      } else if (!hasMoves && !check) {
+        gameOver = true;
+        statusMessage = "Stalemate. The game is a draw.";
+      } else if (check) {
+        statusMessage = `${currentTurn === "w" ? "White" : "Black"} is in check.`;
+      } else if (isThreefoldRepetition()) {
+        gameOver = true;
+        statusMessage = "Draw by threefold repetition.";
+      } else {
+        statusMessage = `${currentTurn === "w" ? "White" : "Black"} to move.`;
+      }
+
+      render();
+    }
+
+    function handleSquareClick(row, column) {
+      if (gameOver) {
+        return;
+      }
+
+      const selectedMove = legalMovesForSelected.find(
+        (move) => move.toRow === row && move.toColumn === column
+      );
+
+      if (selectedSquare && selectedMove) {
+        makeMove(selectedMove);
+        return;
+      }
+
+      const piece = board[row][column];
+
+      if (piece && pieceColor(piece) === currentTurn) {
+        selectedSquare = { row, column };
+        legalMovesForSelected = getLegalMovesForSquare(board, row, column);
+        statusMessage = `Selected ${pieceName(piece)} on ${squareName(row, column)}.`;
+        render();
+        return;
+      }
+
+      selectedSquare = null;
+      legalMovesForSelected = [];
+      statusMessage = `${currentTurn === "w" ? "White" : "Black"} to move.`;
+      render();
+    }
+
+    function renderBoard() {
+      boardElement.innerHTML = "";
+
+      const rowOrder = flipped
+        ? [...Array(8).keys()].reverse()
+        : [...Array(8).keys()];
+
+      const columnOrder = flipped
+        ? [...Array(8).keys()].reverse()
+        : [...Array(8).keys()];
+
+      for (const row of rowOrder) {
+        for (const column of columnOrder) {
+          const square = document.createElement("button");
+          const piece = board[row][column];
+
+          square.className = `square ${(row + column) % 2 === 0 ? "light" : "dark"}`;
+          square.setAttribute("role", "gridcell");
+          square.setAttribute(
+            "aria-label",
+            `${squareName(row, column)} ${piece ? pieceName(piece) : "empty"}`
+          );
+
+          if (piece) {
+            square.textContent = pieceSymbols[piece];
+          }
+
+          if (
+            selectedSquare &&
+            selectedSquare.row === row &&
+            selectedSquare.column === column
+          ) {
+            square.classList.add("selected");
+          }
+
+          const possibleMove = legalMovesForSelected.find(
+            (move) => move.toRow === row && move.toColumn === column
+          );
+
+          if (possibleMove) {
+            square.classList.add("possible");
+
+            if (board[row][column] || possibleMove.enPassant) {
+              square.classList.add("capture");
+            }
+          }
+
+          if (
+            piece === currentTurn + "K" &&
+            isInCheck(board, currentTurn)
+          ) {
+            square.classList.add("in-check");
+          }
+
+          const label = document.createElement("small");
+          label.className = "board-label";
+          label.textContent = squareName(row, column);
+          square.appendChild(label);
+
+          square.addEventListener("click", () => {
+            handleSquareClick(row, column);
+          });
+
+          boardElement.appendChild(square);
+        }
+      }
+    }
+
+    function renderMoveList() {
+      moveListElement.innerHTML = "";
+
+      if (!moveHistory.length) {
+        moveListElement.innerHTML =
+          '<div class="empty-moves">No moves yet.</div>';
+        return;
+      }
+
+      for (let index = 0; index < moveHistory.length; index += 2) {
+        const row = document.createElement("div");
+        row.className = "move-row";
+
+        const number = document.createElement("span");
+        number.className = "move-number";
+        number.textContent = `${Math.floor(index / 2) + 1}.`;
+
+        const whiteMove = document.createElement("span");
+        whiteMove.textContent = moveHistory[index]?.notation || "";
+
+        const blackMove = document.createElement("span");
+        blackMove.textContent = moveHistory[index + 1]?.notation || "";
+
+        row.append(number, whiteMove, blackMove);
+        moveListElement.appendChild(row);
+      }
+    }
+
+    function render() {
+      renderBoard();
+      renderMoveList();
+
+      turnIndicatorElement.textContent = gameOver
+        ? "Game over"
+        : `${currentTurn === "w" ? "White" : "Black"} to move`;
+
+      gameStatusElement.textContent = statusMessage;
+    }
+
+    function resetGame() {
+      board = createInitialBoard();
+      currentTurn = "w";
+      selectedSquare = null;
+      legalMovesForSelected = [];
+      moveHistory = [];
+      positionHistory = [buildPositionKey(board, currentTurn)];
+      enPassantTarget = null;
+      gameOver = false;
+      statusMessage = "Select a piece to begin. White moves first.";
+      render();
+    }
+
+    function undoMove() {
+      if (!moveHistory.length) {
+        statusMessage = "There are no moves to undo.";
+        render();
+        return;
+      }
+
+      moveHistory.pop();
+
+      if (!moveHistory.length) {
+        board = createInitialBoard();
+        currentTurn = "w";
+      } else {
+        board = cloneBoard(moveHistory[moveHistory.length - 1].board);
+        currentTurn = moveHistory.length % 2 === 0 ? "w" : "b";
+      }
+
+      selectedSquare = null;
+      legalMovesForSelected = [];
+      positionHistory = [buildPositionKey(board, currentTurn)];
+      enPassantTarget = null;
+      gameOver = false;
+      statusMessage = `${currentTurn === "w" ? "White" : "Black"} to move.`;
+      render();
+    }
+
+    function flipBoard() {
+      flipped = !flipped;
+      render();
+    }
+
+    function openGames() {
+      gamesSection.classList.add("visible");
+
+      document
+        .querySelectorAll(".toolbar button")
+        .forEach((button) => button.classList.remove("active"));
+
+      document
+        .querySelector('[data-section="games"]')
+        .classList.add("active");
+
+      gamesSection.scrollIntoView({
+        behavior: "smooth"
+      });
+    }
+
+    toolbarButtons.forEach((button) => {
+      button.addEventListener("click", () => {
+        const section = button.dataset.section;
+
+        toolbarButtons.forEach((item) => item.classList.remove("active"));
+        button.classList.add("active");
+
+        if (section === "home") {
+          document.getElementById("home").scrollIntoView({
+            behavior: "smooth"
+          });
+
+          infoPanel.classList.add("visible");
+          infoTitle.textContent = "Welcome, explorer!";
+          infoText.textContent =
+            "You are viewing the central command deck of the galaxy interface.";
+        }
+
+        if (section === "explore") {
+          document.getElementById("explore").scrollIntoView({
+            behavior: "smooth"
+          });
+
+          infoPanel.classList.add("visible");
+          infoTitle.textContent = "Exploration mode activated";
+          infoText.textContent =
+            "Explore the galaxy highlights below and discover how the interface works.";
+        }
+
+        if (section === "games") {
+          openGames();
+        }
+
+        if (section === "missions") {
+          document.getElementById("missions").classList.add("visible");
+          document.getElementById("missions").scrollIntoView({
+            behavior: "smooth"
+          });
+
+          infoPanel.classList.add("visible");
+          infoTitle.textContent = "Mission control";
+          infoText.textContent =
+            "Your mission is to create a polished, responsive, space-themed website.";
+        }
+
+   @media (max-width: 800px) {
+  .toolbar {
+    position: fixed;
+    top: auto;
+    right: 50%;
+    bottom: 15px;
+    left: auto;
+    flex-direction: row;
+    width: max-content;
+    transform: translateX(50%);
+  }
+
+
+  .toolbar-logo {
+    display: none;
+  }
+
+  .toolbar button span {
+    top: -38px;
+    right: 50%;
+    left:auto;
+    transform: translateX(50%);
+  }
+
+  .toolbar button:hover span {
+    transform: translateX(50%);
+  }
+
+  .page {
+    width: calc(100% - 30px);
+    padding: 25px 0 110px;
+  }
+
+  .hero {
+    padding: 34px 24px;
+  }
+
+  .cards {
+    grid-template-columns: 1fr;
+  }
+
+  .planet {
+    right: -80px;
+    top: 8%;
+    transform: scale(0.7);
+  }
+}
+
+
+        }
+      });
+    });
+
+    exploreButton.addEventListener("click", () => {
+      document.getElementById("explore").scrollIntoView({
+        behavior: "smooth"
+      });
+
+      infoPanel.classList.add("visible");
+      infoTitle.textContent = "Exploration started";
+      infoText.textContent =
+        "Welcome to the next section of your galaxy command center.";
+    });
+
+    openChessButton.addEventListener("click", openGames);
+
+    randomButton.addEventListener("click", () => {
+      const randomStar = stars[Math.floor(Math.random() * stars.length)];
+
+      infoPanel.classList.add("visible");
+      infoTitle.textContent = "Random star discovered";
+      infoText.textContent =
+        `Your telescope is currently focused on ${randomStar}.`;
+    });
+
+    document.getElementById("newGameButton").addEventListener("click", resetGame);
+    document.getElementById("undoButton").addEventListener("click", undoMove);
+    document.getElementById("flipButton").addEventListener("click", flipBoard);
+
+    function respondTo@essage(text) {
+      const message = text.toLowerCase().trim();
+
+      if (!message) {
+        return "Please enter a message before sending.";
+      }
+
+      if (
+        message.includes("css") ||
+        message.includes("style") ||
+        message.includes("color")
+      ) {
+        return "CSS controls the appearance of the site, including the space background, glowing toolbar, cards, chessboard, and animations.";
+      }
+
+      if (
+        message.includes("javascript") ||
+        message.includes("js")
+      ) {
+        return "JavaScript controls the toolbar, chat responses, random stars, chess moves, captures, check, checkmate, promotion, castling, and undo.";
+      }
+
+      if (message.includes("chess") || message.includes("game")) {
+        return "Open the Games tab to play Galaxy Chess. Click a piece, then click one of its highlighted legal moves.";
+      }
+
+      if (message.includes("hello") || message.includes("hi")) {
+        return "Hello, explorer! I am ready to help you build your galaxy-themed website.";
+      }
+
+      if (message.includes("html")) {
+        return "HTML provides the structure of the toolbar, hero section, cards, chess game, buttons, and footer.";
+      }
+
+      return "Try asking me about HTML, CSS, JavaScript, the galaxy theme, the toolbar, or the chess game.";
+    }
+
+    sendButton.addEventListener("click", () => {
+      const response = respondToMessage(messageInput.value);
+
+      infoPanel.classList.add("visible");
+      infoTitle.textContent = "Computer response";
+      infoText.textContent = response;
+      messageInput.value = "";
+    });
+
+    messageInput.addEventListener("keydown", (event) => {
+      if (event.key === "Enter") {
+        sendButton.click();
+      }
+    });
+
+        resetGame();
+  </script>
+</body>
+</html>
+
+
